@@ -45,5 +45,7 @@ else ()
       ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/TouchManager.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/TouchManager.hpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/FloatingPlatform.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/FloatingPlatform.hpp
   )
 endif ()
