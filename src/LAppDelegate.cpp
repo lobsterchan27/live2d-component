@@ -20,7 +20,7 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
-#include <windows.h>
+// #include <windows.h>
 #include <fstream>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -36,17 +36,16 @@ namespace FFmpegUtils
         csmUint32 width,
         csmUint32 height,
         const std::string &audioFilePath,
+        const std::string &existingVideoPath,
         const std::string &outputPath)
     {
-        // std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height)
-        //                     + " -r 30 -pix_fmt rgba -i - -i \"" + audioFilePath + "\" -c:v libx264 -preset medium -qp 0 "
-        //                     + "-c:a copy output.mp4";
+        // Construct the FFmpeg command to overlay the RGBA frames onto the existing video
+        std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height) +
+                              " -r 30 -pix_fmt rgba -i - -i \"" + existingVideoPath + "\" -i \"" + audioFilePath + "\" " +
+                              "-filter_complex \"[1:v][0:v] overlay=0:0\" " +
+                              "-c:v libx264 -preset medium -qp 0 -c:a copy \"" + outputPath + ".mp4\"";
 
-        std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height)
-                + " -r 30 -pix_fmt rgba -i - -i \"" + audioFilePath + "\" -c:v prores_ks -profile:v 4444 "
-                + "-pix_fmt yuva444p10le -c:a copy \"" + outputPath + ".mov\"";
-
-
+        // Open a pipe to the FFmpeg process
         FILE *ffmpeg = _popen(command.c_str(), "wb");
 
         if (!ffmpeg)
@@ -127,17 +126,17 @@ void LAppDelegate::ReleaseInstance()
     s_instance = NULL;
 }
 
-bool LAppDelegate::Initialize(
-    const std::string audioFilePath,
-    const std::string outputPath)
+bool LAppDelegate::Initialize()
 {
     if (DebugLogEnable)
     {
         LAppPal::PrintLogLn("START");
     }
 
-    _audioFilePath = audioFilePath;
-    _outputPath = outputPath;
+    FloatingPlatform *platform = FloatingPlatform::getInstance();
+    _audioFilePath = platform->getAudioFilePath();
+    _videoFilePath = platform->getVideoFilePath();
+    _outputPath = platform->getOutputPath();
 
     // GLFWの初期化
     if (glfwInit() == GL_FALSE)
@@ -233,19 +232,19 @@ void LAppDelegate::Release()
     CubismFramework::Dispose();
 }
 
-void printWorkingDirectory()
-{
-    const DWORD buffSize = MAX_PATH;
-    char buffer[buffSize];
-    if (GetCurrentDirectory(buffSize, buffer))
-    {
-        std::cout << "Current working directory is: " << buffer << std::endl;
-    }
-    else
-    {
-        std::cout << "Error getting current working directory" << std::endl;
-    }
-}
+// void printWorkingDirectory()
+// {
+//     const DWORD buffSize = MAX_PATH;
+//     char buffer[buffSize];
+//     if (GetCurrentDirectoryA(buffSize, buffer))
+//     {
+//         std::cout << "Current working directory is: " << buffer << std::endl;
+//     }
+//     else
+//     {
+//         std::cout << "Error getting current working directory" << std::endl;
+//     }
+// }
 
 void LAppDelegate::Run()
 {
@@ -259,16 +258,14 @@ void LAppDelegate::Run()
 
     float audioDurationSeconds = static_cast<float>(fileInfo._samplesPerChannel) / fileInfo._samplingRate;
 
-
     initializePBOs(RenderTargetWidth, RenderTargetHeight); // Assume this function initializes PBOs
 
     // Open FFmpeg's stdin in binary write mode
-    FILE *ffmpeg = FFmpegUtils::startFFmpegProcess(RenderTargetWidth, RenderTargetHeight, _audioFilePath, _outputPath);
+    FILE *ffmpeg = FFmpegUtils::startFFmpegProcess(RenderTargetWidth, RenderTargetHeight, _audioFilePath, _videoFilePath, _outputPath);
 
     // Main loop
     while (glfwWindowShouldClose(_window) == GL_FALSE && !_isEnd && elapsedSeconds < audioDurationSeconds)
     {
-
 
         LAppPal::UpdateTimeFPS(targetFPS);
         csmFloat32 deltaTime = LAppPal::GetDeltaTime();
@@ -306,7 +303,6 @@ void LAppDelegate::Run()
         }
 
         std::swap(currentPBO, nextPBO); // Swap the PBOs
-
     }
 
     FFmpegUtils::closeFFmpegProcess(ffmpeg);

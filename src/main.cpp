@@ -6,37 +6,67 @@
  */
 
 #include "LAppDelegate.hpp"
+#include "FloatingPlatform.hpp"
 #include <iostream>
 #include <string>
 #include <algorithm>
 
-// Function to find a command line argument
-std::string getCmdOption(char** begin, char** end, const std::string& option) {
-    char** itr = std::find(begin, end, option);
-    if (itr != end && ++itr != end) {
+// Function to find a command line argument and return its value
+std::string getCmdOption(char **begin, char **end, const std::string &option)
+{
+    char **itr = std::find(begin, end, option);
+    if (itr != end && ++itr != end)
+    {
         return std::string(*itr);
     }
     return "";
 }
 
 // Function to check if a command line option exists
-bool cmdOptionExists(char** begin, char** end, const std::string& option) {
+bool cmdOptionExists(char **begin, char **end, const std::string &option)
+{
     return std::find(begin, end, option) != end;
 }
 
-int main(int argc, char* argv[]) {
-    // Check if the audio file argument is provided
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <audiofile> [outputpath]" << std::endl;
-        return 1; // Exit if the audio file is not provided
+int main(int argc, char *argv[])
+{
+    // Check if the minimum required arguments are provided
+    if (argc < 5)
+    {
+        std::cerr << "Usage: " << argv[0] << " -a <audiofile> -v <videofile> [-o <outputpath>]" << std::endl;
+        return 1; // Exit if the required arguments are not provided
     }
 
-    std::string audioFilePath = argv[1]; // The first argument is the audio file path
-    std::string outputPath = argc > 2 ? argv[2] : "default_output_path/"; // Optional output path
+    // Parse the command line arguments
+    std::string audioFilePath = getCmdOption(argv, argv + argc, "-a");
+    std::string videoFilePath = getCmdOption(argv, argv + argc, "-v");
+    std::string outputPath = getCmdOption(argv, argv + argc, "-o");
 
-    // Initialize the application with the audio file path
-    if (LAppDelegate::GetInstance()->Initialize(audioFilePath, outputPath) == GL_FALSE) {
-        std::cerr << "Failed to initialize application with audio file: " << audioFilePath << std::endl;
+    std::cout << "Audio file path: " << audioFilePath << std::endl;
+    std::cout << "Video file path: " << videoFilePath << std::endl;
+    std::cout << "Output path: " << outputPath << std::endl;
+
+    if (audioFilePath.empty() || videoFilePath.empty())
+    {
+        std::cerr << "Error: Audio file and video file paths are required." << std::endl;
+        return 1;
+    }
+
+    if (outputPath.empty())
+    {
+        outputPath = "output"; // Set default output path if not provided
+    }
+
+    // Get the singleton instance of FloatingPlatform
+    FloatingPlatform *platform = FloatingPlatform::getInstance();
+    platform->setAudioFilePath(audioFilePath);
+    platform->setVideoFilePath(videoFilePath);
+    platform->setOutputPath(outputPath);
+
+    if (LAppDelegate::GetInstance()->Initialize() == GL_FALSE)
+    {
+        FloatingPlatform::releaseInstance();
+        LAppDelegate::ReleaseInstance();
         return 1;
     }
 

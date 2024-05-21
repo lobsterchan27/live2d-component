@@ -41,9 +41,7 @@ public:
     /**
     * @brief   APPに必要なものを初期化する。
     */
-    bool Initialize(
-        const std::string audioFilePath,
-        const std::string outputPath);
+    bool Initialize();
 
     /**
     * @brief   解放する。
@@ -145,6 +143,7 @@ private:
 
     //Wav handler for lipsync and lifetime duration
     std::string _audioFilePath;
+    std::string _videoFilePath;
     std::string _outputPath;
     LAppWavFileHandler* _wavFileHandler;
     float elapsedSeconds = 0.0f;

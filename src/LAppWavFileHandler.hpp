@@ -123,7 +123,7 @@ public:
     /*
     * get and calculate maxRms for purposes of dynamically rescaling audio levels
     */
-    void LAppWavFileHandler::ComputeMaxRMS(float deltaTimeSeconds);
+    void LAppWavFileHandler::ComputeMaxRMS(double deltaTimeSeconds);
 
     /*
     * get maxRMS

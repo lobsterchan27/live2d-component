@@ -29,13 +29,34 @@ LAppWavFileHandler* FloatingPlatform::getWavFileHandler() {
     return _wavFileHandler;
 }
 
+void FloatingPlatform::setAudioFilePath(const std::string& path) {
+    _audioFilePath = path;
+}
+
+std::string FloatingPlatform::getAudioFilePath() const {
+    return _audioFilePath;
+}
+
+void FloatingPlatform::setVideoFilePath(const std::string& path) {
+    _videoFilePath = path;
+}
+
+std::string FloatingPlatform::getVideoFilePath() const {
+    return _videoFilePath;
+}
+
+void FloatingPlatform::setOutputPath(const std::string& path) {
+    _outputPath = path;
+}
+
+std::string FloatingPlatform::getOutputPath() const {
+    return _outputPath;
+}
+
 FloatingPlatform::FloatingPlatform()
     : _wavFileHandler(nullptr) {
 }
 
 FloatingPlatform::~FloatingPlatform() {
-    if (_wavFileHandler != nullptr) {
-        delete _wavFileHandler;
-        _wavFileHandler = nullptr;
-    }
+    
 }

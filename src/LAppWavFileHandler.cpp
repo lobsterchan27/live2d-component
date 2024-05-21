@@ -10,6 +10,7 @@
 #include <cstdint>
 #include "LAppPal.hpp"
 
+
 LAppWavFileHandler::LAppWavFileHandler()
     : _rawData(NULL), _pcmData(NULL), _userTimeSeconds(0.0f), _lastRms(0.0f), _sampleOffset(0)
 {
@@ -72,7 +73,7 @@ Csm::csmBool LAppWavFileHandler::Update(Csm::csmFloat32 deltaTimeSeconds, float 
 }
 
 // I put this trash here #lobby
-void LAppWavFileHandler::ComputeMaxRMS(float deltaTimeSeconds)
+void LAppWavFileHandler::ComputeMaxRMS(double deltaTimeSeconds)
 {
     _maxRms = 0.0f;
     Csm::csmUint32 samplesPerUpdate = static_cast<Csm::csmUint32>(_wavFileInfo._samplingRate * deltaTimeSeconds);

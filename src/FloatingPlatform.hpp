@@ -1,22 +1,37 @@
 #pragma once
 
 #include "LAppWavFileHandler.hpp"
+#include <string>
 
-class FloatingPlatform {
+class FloatingPlatform
+{
 public:
-    static FloatingPlatform* getInstance();
+    static FloatingPlatform *getInstance();
 
     static void releaseInstance();
 
-    void setWavFileHandler(LAppWavFileHandler* handler);
+    void setWavFileHandler(LAppWavFileHandler *handler);
 
-    LAppWavFileHandler* getWavFileHandler();
+    LAppWavFileHandler *getWavFileHandler();
+
+    void setAudioFilePath(const std::string &path);
+    std::string getAudioFilePath() const;
+
+    void setVideoFilePath(const std::string &path);
+    std::string getVideoFilePath() const;
+
+    void setOutputPath(const std::string &path);
+    std::string getOutputPath() const;
 
 private:
     FloatingPlatform();
 
     ~FloatingPlatform();
 
-    LAppWavFileHandler* _wavFileHandler;
-    
+    LAppWavFileHandler *_wavFileHandler;
+
+    // Member variables to store CLI arguments
+    std::string _audioFilePath;
+    std::string _videoFilePath;
+    std::string _outputPath;
 };
