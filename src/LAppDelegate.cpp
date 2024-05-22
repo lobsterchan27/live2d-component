@@ -40,10 +40,14 @@ namespace FFmpegUtils
         const std::string &outputPath)
     {
         // Construct the FFmpeg command to overlay the RGBA frames onto the existing video
-        std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height) +
-                              " -r 30 -pix_fmt rgba -i - -i \"" + existingVideoPath + "\" -i \"" + audioFilePath + "\" " +
-                              "-filter_complex \"[1:v][0:v] overlay=0:0\" " +
-                              "-c:v libx264 -preset medium -qp 0 -c:a copy \"" + outputPath + ".mp4\"";
+        // std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height) +
+        //                       " -r 30 -pix_fmt rgba -i - -i \"" + existingVideoPath + "\" -i \"" + audioFilePath + "\" " +
+        //                       "-filter_complex \"[1:v][0:v] overlay=0:0\" " +
+        //                       "-c:v libx264 -preset medium -qp 23 -c:a copy \"" + outputPath + ".mp4\"";
+
+        std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height)
+        + " -r 30 -pix_fmt rgba -i - -i \"" + audioFilePath + "\" -c:v prores_ks -profile:v 4444 "
+        + "-pix_fmt yuva444p10le -c:a copy \"" + outputPath + ".mov\"";
 
         // Open a pipe to the FFmpeg process
         FILE *ffmpeg = _popen(command.c_str(), "wb");
@@ -264,6 +268,7 @@ void LAppDelegate::Run()
     FILE *ffmpeg = FFmpegUtils::startFFmpegProcess(RenderTargetWidth, RenderTargetHeight, _audioFilePath, _videoFilePath, _outputPath);
 
     // Main loop
+    _finalFbo->BeginDraw();
     while (glfwWindowShouldClose(_window) == GL_FALSE && !_isEnd && elapsedSeconds < audioDurationSeconds)
     {
 
@@ -272,12 +277,12 @@ void LAppDelegate::Run()
         elapsedSeconds += deltaTime;
 
         // Draw to FBO
-        _finalFbo->BeginDraw();
+        // _finalFbo->BeginDraw();
         glClearDepth(1.0);
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         _view->Render();
-        _finalFbo->EndDraw();
+        // _finalFbo->EndDraw();
 
         // Bind PBO and read pixels from FBO
         glBindFramebuffer(GL_READ_FRAMEBUFFER, _finalFbo->GetRenderTexture());
@@ -304,10 +309,11 @@ void LAppDelegate::Run()
 
         std::swap(currentPBO, nextPBO); // Swap the PBOs
     }
-
+    _finalFbo->EndDraw();
     FFmpegUtils::closeFFmpegProcess(ffmpeg);
     // Cleanup
     Release();
+    FloatingPlatform::releaseInstance();
     LAppDelegate::ReleaseInstance();
 }
 
