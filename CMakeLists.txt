@@ -7,7 +7,7 @@ option(
 )
 
 # Set app name.
-set(APP_NAME Demo)
+set(APP_NAME live2d)
 # Set directory paths.
 set(SDK_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 set(CORE_PATH ${SDK_ROOT_PATH}/Core)
