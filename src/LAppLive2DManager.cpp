@@ -20,26 +20,28 @@
 
 #include "FloatingPlatform.hpp"
 
+
 using namespace Csm;
 using namespace LAppDefine;
 using namespace std;
 
-namespace {
-    LAppLive2DManager* s_instance = NULL;
+namespace
+{
+    LAppLive2DManager *s_instance = NULL;
 
-    void FinishedMotion(ACubismMotion* self)
+    void FinishedMotion(ACubismMotion *self)
     {
         LAppPal::PrintLogLn("Motion Finished: %x", self);
     }
 
-    int CompareCsmString(const void* a, const void* b)
+    int CompareCsmString(const void *a, const void *b)
     {
-        return strcmp(reinterpret_cast<const Csm::csmString*>(a)->GetRawString(),
-            reinterpret_cast<const Csm::csmString*>(b)->GetRawString());
+        return strcmp(reinterpret_cast<const Csm::csmString *>(a)->GetRawString(),
+                      reinterpret_cast<const Csm::csmString *>(b)->GetRawString());
     }
 }
 
-LAppLive2DManager* LAppLive2DManager::GetInstance()
+LAppLive2DManager *LAppLive2DManager::GetInstance()
 {
     if (s_instance == NULL)
     {
@@ -60,8 +62,7 @@ void LAppLive2DManager::ReleaseInstance()
 }
 
 LAppLive2DManager::LAppLive2DManager()
-    : _viewMatrix(NULL)
-    , _sceneIndex(0)
+    : _viewMatrix(NULL), _sceneIndex(0)
 {
     _viewMatrix = new CubismMatrix44();
     SetUpModel();
@@ -94,7 +95,8 @@ void LAppLive2DManager::SetUpModel()
 
     struct _finddata_t fdata;
     intptr_t fh = _findfirst(crawlPath.GetRawString(), &fdata);
-    if (fh == -1) return;
+    if (fh == -1)
+        return;
 
     _modelDir.Clear();
 
@@ -129,7 +131,7 @@ csmInt32 LAppLive2DManager::GetModelDirSize() const
     return _modelDir.GetSize();
 }
 
-LAppModel* LAppLive2DManager::GetModel(csmUint32 no) const
+LAppModel *LAppLive2DManager::GetModel(csmUint32 no) const
 {
     if (no < _models.GetSize())
     {
@@ -143,7 +145,7 @@ void LAppLive2DManager::OnDrag(csmFloat32 x, csmFloat32 y) const
 {
     for (csmUint32 i = 0; i < _models.GetSize(); i++)
     {
-        LAppModel* model = GetModel(i);
+        LAppModel *model = GetModel(i);
 
         model->SetDragging(x, y);
     }
@@ -180,13 +182,19 @@ void LAppLive2DManager::OnTap(csmFloat32 x, csmFloat32 y)
 void LAppLive2DManager::OnUpdate() const
 {
     int width, height;
-    glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &width, &height);
+    float modelScale, correctionValueX, correctionValueY;
+    // glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &width, &height);
+    width = RenderTargetWidth;
+    height = RenderTargetHeight;
+    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 
     csmUint32 modelCount = _models.GetSize();
     for (csmUint32 i = 0; i < modelCount; ++i)
     {
         CubismMatrix44 projection;
-        LAppModel* model = GetModel(i);
+        LAppModel *model = GetModel(i);
+        CubismModel *csmModel = model->GetModel();
+        CubismModelMatrix *modelMatrix = model->GetModelMatrix();
 
         if (model->GetModel() == NULL)
         {
@@ -215,12 +223,37 @@ void LAppLive2DManager::OnUpdate() const
         // LAppDelegate::GetInstance()->GetView()->PreModelDraw(*model);
 
         // #lobby translation matrix/projection matrix
+        // TODO: REFACTOR TO NOT BE DOGTRASH
+        float offsetX, offsetY;
+        float m = 0.822857f;
+        float c = 1.03714f;
+        float maxScale = 3.0f;
+        float minScale = 1.0f;
 
-        // projection.TranslateY(-0.5f);
-        // projection.TranslateX(0.7f);
-        
+        // Model scale calculation
+        modelScale = m * aspectRatio + c;
+
+        if (modelScale > maxScale) {
+            modelScale = maxScale;
+        }
+        else if (modelScale < minScale) {
+            modelScale = minScale;
+        }
+
+        modelMatrix->SetWidth(modelScale);
+        correctionValueX = projection.GetScaleX() * modelScale;
+        correctionValueY = projection.GetScaleY() * modelScale;
+
+        // dividing by 2 to get half the width
+        offsetY = correctionValueY / 2 * 0.64f;
+        offsetX = correctionValueX / 2; 
+        offsetX = offsetX - (offsetX * 0.64f); // White Space offsetting.
+
+        projection.TranslateY(-1.0f - offsetY);
+        projection.TranslateX(1.0f - offsetX);
+
         model->Update();
-        model->Draw(projection);///< 参照渡しなのでprojectionは変質する
+        model->Draw(projection); ///< 参照渡しなのでprojectionは変質する
 
         // モデル1体描画後コール
         // LAppDelegate::GetInstance()->GetView()->PostModelDraw(*model);
@@ -243,7 +276,7 @@ void LAppLive2DManager::ChangeScene(Csm::csmInt32 index)
 
     // model3.jsonのパスを決定する.
     // ディレクトリ名とmodel3.jsonの名前を一致していることが条件
-    const csmString& model = _modelDir[index];
+    const csmString &model = _modelDir[index];
 
     csmString modelPath(ResourcesPath);
     modelPath += model;
@@ -256,7 +289,7 @@ void LAppLive2DManager::ChangeScene(Csm::csmInt32 index)
     _models.PushBack(new LAppModel());
     _models[0]->LoadAssets(modelPath.GetRawString(), modelJsonName.GetRawString());
 
-    LAppWavFileHandler* handler = FloatingPlatform::getInstance()->getWavFileHandler();
+    LAppWavFileHandler *handler = FloatingPlatform::getInstance()->getWavFileHandler();
     _models[0]->setWavFileHandler(handler);
 
     /*
@@ -286,7 +319,7 @@ void LAppLive2DManager::ChangeScene(Csm::csmInt32 index)
         LAppDelegate::GetInstance()->GetView()->SwitchRenderingTarget(useRenderTarget);
 
         // 別レンダリング先を選択した際の背景クリア色
-        float clearColor[3] = { 1.0f, 1.0f, 1.0f };
+        float clearColor[3] = {1.0f, 1.0f, 1.0f};
         LAppDelegate::GetInstance()->GetView()->SetRenderTargetClearColor(clearColor[0], clearColor[1], clearColor[2]);
     }
 }
@@ -296,9 +329,10 @@ csmUint32 LAppLive2DManager::GetModelNum() const
     return _models.GetSize();
 }
 
-void LAppLive2DManager::SetViewMatrix(CubismMatrix44* m)
+void LAppLive2DManager::SetViewMatrix(CubismMatrix44 *m)
 {
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 16; i++)
+    {
         _viewMatrix->GetArray()[i] = m->GetArray()[i];
     }
 }

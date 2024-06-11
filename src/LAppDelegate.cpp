@@ -118,7 +118,7 @@ namespace FFmpegUtils
             voice +                                                                                   // Noise Reduction
             "[voice]asplit=2[mix_voice][duck_voice];"
             "[duck_voice]apad=pad_dur=" + postDurationStr + "[duck_voice_pad];"                                                 // ffmpeg can't reuse the same audio stream for multiple filters
-            "[extended_audio][duck_voice_pad]sidechaincompress=threshold=0.05:ratio=4:attack=4:knee=3:release=1000[ducked_audio];"
+            "[extended_audio][duck_voice_pad]sidechaincompress=threshold=0.05:ratio=2:attack=4:knee=3:release=1000[ducked_audio];"
             "[mix_voice][ducked_audio]amix=inputs=2:duration=longest:dropout_transition=0.5[outa]\"" + // Mix the audio streams
             " -map \"[outv]\"" +                                                                      // Map the video output
             " -map \"[outa]\"" +                                                                      // Map the audio output
@@ -364,7 +364,7 @@ bool LAppDelegate::Initialize()
     //  glfwSetCursorPosCallback(_window, EventHandler::OnMouseCallBack);
 
     // ウィンドウサイズ記憶
-    // int width, height;
+    int width, height;
     // glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &width, &height);
     _windowWidth = RenderTargetWidth;
     _windowHeight = RenderTargetHeight;
@@ -442,7 +442,6 @@ void LAppDelegate::Run()
     _finalFbo->BeginDraw();
     while (glfwWindowShouldClose(_window) == GL_FALSE && !_isEnd && elapsedSeconds < (AudioDuration + postDuration))
     {
-
         LAppPal::UpdateTimeFPS(targetFPS);
         deltaTime = LAppPal::GetDeltaTime();
         elapsedSeconds += deltaTime;

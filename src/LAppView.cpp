@@ -16,21 +16,21 @@
 #include "TouchManager.hpp"
 #include "LAppSprite.hpp"
 #include "LAppModel.hpp"
+#include <iostream>
 
 using namespace std;
 using namespace LAppDefine;
 
-LAppView::LAppView():
-    _programId(0),
-    _back(NULL),
-    _gear(NULL),
-    _power(NULL),
-    _renderSprite(NULL),
-    _renderTarget(SelectTarget_None)
+LAppView::LAppView() : _programId(0),
+                       _back(NULL),
+                       _gear(NULL),
+                       _power(NULL),
+                       _renderSprite(NULL),
+                       _renderTarget(SelectTarget_None)
 {
-    _clearColor[0] = 1.0f;
-    _clearColor[1] = 1.0f;
-    _clearColor[2] = 1.0f;
+    _clearColor[0] = 0.0f;
+    _clearColor[1] = 0.0f;
+    _clearColor[2] = 0.0f;
     _clearColor[3] = 0.0f;
 
     // タッチ関係のイベント管理
@@ -58,9 +58,11 @@ LAppView::~LAppView()
 void LAppView::Initialize()
 {
     int width, height;
-    glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &width, &height);
+    // glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &width, &height);
+    width = RenderTargetWidth;
+    height = RenderTargetHeight;
 
-    if(width==0 || height==0)
+    if (width == 0 || height == 0)
     {
         return;
     }
@@ -97,15 +99,16 @@ void LAppView::Initialize()
         ViewLogicalMaxLeft,
         ViewLogicalMaxRight,
         ViewLogicalMaxBottom,
-        ViewLogicalMaxTop
-    );
+        ViewLogicalMaxTop);
 }
 
 void LAppView::Render()
 {
     // 画面サイズを取得する
     int maxWidth, maxHeight;
-    glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &maxWidth, &maxHeight);
+    // glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &maxWidth, &maxHeight);
+    maxWidth = RenderTargetWidth;
+    maxHeight = RenderTargetHeight;
     // _back->SetWindowSize(maxWidth, maxHeight);
     // _gear->SetWindowSize(maxWidth, maxHeight);
     // _power->SetWindowSize(maxWidth, maxHeight);
@@ -114,7 +117,7 @@ void LAppView::Render()
     // _gear->Render();
     // _power->Render();
 
-    LAppLive2DManager* Live2DManager = LAppLive2DManager::GetInstance();
+    LAppLive2DManager *Live2DManager = LAppLive2DManager::GetInstance();
 
     Live2DManager->SetViewMatrix(_viewMatrix);
 
@@ -125,23 +128,27 @@ void LAppView::Render()
     if (_renderTarget == SelectTarget_ModelFrameBuffer && _renderSprite)
     {
         const GLfloat uvVertex[] =
-        {
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-        };
+            {
+                1.0f,
+                1.0f,
+                0.0f,
+                1.0f,
+                0.0f,
+                0.0f,
+                1.0f,
+                0.0f,
+            };
 
         for (csmUint32 i = 0; i < Live2DManager->GetModelNum(); i++)
         {
-            LAppModel* model = Live2DManager->GetModel(i);
+            LAppModel *model = Live2DManager->GetModel(i);
             float alpha = i < 1 ? 1.0f : model->GetOpacity(); // 片方のみ不透明度を取得できるようにする
             _renderSprite->SetColor(1.0f, 1.0f, 1.0f, alpha);
 
             if (model)
             {
                 _renderSprite->SetWindowSize(maxWidth, maxHeight);
-                _renderSprite->RenderImmidiate( model->GetRenderBuffer().GetColorBuffer(), uvVertex);
+                _renderSprite->RenderImmidiate(model->GetRenderBuffer().GetColorBuffer(), uvVertex);
             }
         }
     }
@@ -152,44 +159,46 @@ void LAppView::InitializeSprite()
     _programId = LAppDelegate::GetInstance()->CreateShader();
 
     int width, height;
-    glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &width, &height);
+    // glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &width, &height);
+    width = RenderTargetWidth;
+    height = RenderTargetHeight;
 
-    LAppTextureManager* textureManager = LAppDelegate::GetInstance()->GetTextureManager();
+    LAppTextureManager *textureManager = LAppDelegate::GetInstance()->GetTextureManager();
     const string resourcesPath = ResourcesPath;
 
     // #lobby sprites initialization
 
-    // string imageName = BackImageName;
-    // LAppTextureManager::TextureInfo* backgroundTexture = textureManager->CreateTextureFromPngFile(resourcesPath + imageName);
+    //     string imageName = BackImageName;
+    //     LAppTextureManager::TextureInfo* backgroundTexture = textureManager->CreateTextureFromPngFile(resourcesPath + imageName);
 
-    // float x = width * 0.5f;
-    // float y = height * 0.5f;
-    // float fWidth = static_cast<float>(backgroundTexture->width * 2.0f);
-    // float fHeight = static_cast<float>(height * 0.95f);
-    // _back = new LAppSprite(x, y, fWidth, fHeight, backgroundTexture->id, _programId);
+    //     float x = width * 0.5f;
+    //     float y = height * 0.5f;
+    //     float fWidth = static_cast<float>(backgroundTexture->width * 2.0f);
+    //     float fHeight = static_cast<float>(height * 0.95f);
+    //     _back = new LAppSprite(x, y, fWidth, fHeight, backgroundTexture->id, _programId);
 
-    // imageName = GearImageName;
-    // LAppTextureManager::TextureInfo* gearTexture = textureManager->CreateTextureFromPngFile(resourcesPath + imageName);
+    //     imageName = GearImageName;
+    //     LAppTextureManager::TextureInfo* gearTexture = textureManager->CreateTextureFromPngFile(resourcesPath + imageName);
 
-    // x = static_cast<float>(width - gearTexture->width * 0.5f);
-    // y = static_cast<float>(height - gearTexture->height * 0.5f);
-    // fWidth = static_cast<float>(gearTexture->width);
-    // fHeight = static_cast<float>(gearTexture->height);
-    // _gear = new LAppSprite(x, y, fWidth, fHeight, gearTexture->id, _programId);
+    //     x = static_cast<float>(width - gearTexture->width * 0.5f);
+    //     y = static_cast<float>(height - gearTexture->height * 0.5f);
+    //     fWidth = static_cast<float>(gearTexture->width);
+    //     fHeight = static_cast<float>(gearTexture->height);
+    //     _gear = new LAppSprite(x, y, fWidth, fHeight, gearTexture->id, _programId);
 
-    // imageName = PowerImageName;
-    // LAppTextureManager::TextureInfo* powerTexture = textureManager->CreateTextureFromPngFile(resourcesPath + imageName);
+    //     imageName = PowerImageName;
+    //     LAppTextureManager::TextureInfo* powerTexture = textureManager->CreateTextureFromPngFile(resourcesPath + imageName);
 
-    // x = static_cast<float>(width - powerTexture->width * 0.5f);
-    // y = static_cast<float>(powerTexture->height * 0.5f);
-    // fWidth = static_cast<float>(powerTexture->width);
-    // fHeight = static_cast<float>(powerTexture->height);
-    // _power = new LAppSprite(x, y, fWidth, fHeight, powerTexture->id, _programId);
+    //     x = static_cast<float>(width - powerTexture->width * 0.5f);
+    //     y = static_cast<float>(powerTexture->height * 0.5f);
+    //     fWidth = static_cast<float>(powerTexture->width);
+    //     fHeight = static_cast<float>(powerTexture->height);
+    //     _power = new LAppSprite(x, y, fWidth, fHeight, powerTexture->id, _programId);
 
-    // 画面全体を覆うサイズ
-    // x = width * 0.5f;
-    // y = height * 0.5f;
-    // _renderSprite = new LAppSprite(x, y, static_cast<float>(width), static_cast<float>(height), 0, _programId);
+    //     // 画面全体を覆うサイズ
+    //     x = width * 0.5f;
+    //     y = height * 0.5f;
+    //     _renderSprite = new LAppSprite(x, y, static_cast<float>(width), static_cast<float>(height), 0, _programId);
 }
 
 void LAppView::OnTouchesBegan(float px, float py) const
@@ -204,14 +213,14 @@ void LAppView::OnTouchesMoved(float px, float py) const
 
     _touchManager->TouchesMoved(px, py);
 
-    LAppLive2DManager* Live2DManager = LAppLive2DManager::GetInstance();
+    LAppLive2DManager *Live2DManager = LAppLive2DManager::GetInstance();
     Live2DManager->OnDrag(viewX, viewY);
 }
 
 void LAppView::OnTouchesEnded(float px, float py) const
 {
     // タッチ終了
-    LAppLive2DManager* live2DManager = LAppLive2DManager::GetInstance();
+    LAppLive2DManager *live2DManager = LAppLive2DManager::GetInstance();
     live2DManager->OnDrag(0.0f, 0.0f);
     {
 
@@ -241,13 +250,13 @@ void LAppView::OnTouchesEnded(float px, float py) const
 float LAppView::TransformViewX(float deviceX) const
 {
     float screenX = _deviceToScreen->TransformX(deviceX); // 論理座標変換した座標を取得。
-    return _viewMatrix->InvertTransformX(screenX); // 拡大、縮小、移動後の値。
+    return _viewMatrix->InvertTransformX(screenX);        // 拡大、縮小、移動後の値。
 }
 
 float LAppView::TransformViewY(float deviceY) const
 {
     float screenY = _deviceToScreen->TransformY(deviceY); // 論理座標変換した座標を取得。
-    return _viewMatrix->InvertTransformY(screenY); // 拡大、縮小、移動後の値。
+    return _viewMatrix->InvertTransformY(screenY);        // 拡大、縮小、移動後の値。
 }
 
 float LAppView::TransformScreenX(float deviceX) const
@@ -260,19 +269,19 @@ float LAppView::TransformScreenY(float deviceY) const
     return _deviceToScreen->TransformY(deviceY);
 }
 
-void LAppView::PreModelDraw(LAppModel& refModel)
+void LAppView::PreModelDraw(LAppModel &refModel)
 {
     // 別のレンダリングターゲットへ向けて描画する場合の使用するフレームバッファ
-    Csm::Rendering::CubismOffscreenSurface_OpenGLES2* useTarget = NULL;
+    Csm::Rendering::CubismOffscreenSurface_OpenGLES2 *useTarget = NULL;
 
     if (_renderTarget != SelectTarget_None)
-    {// 別のレンダリングターゲットへ向けて描画する場合
+    { // 別のレンダリングターゲットへ向けて描画する場合
 
         // 使用するターゲット
         useTarget = (_renderTarget == SelectTarget_ViewFrameBuffer) ? &_renderBuffer : &refModel.GetRenderBuffer();
 
         if (!useTarget->IsValid())
-        {// 描画ターゲット内部未作成の場合はここで作成
+        { // 描画ターゲット内部未作成の場合はここで作成
             int width, height;
             glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &width, &height);
             if (width != 0 && height != 0)
@@ -288,13 +297,13 @@ void LAppView::PreModelDraw(LAppModel& refModel)
     }
 }
 
-void LAppView::PostModelDraw(LAppModel& refModel)
+void LAppView::PostModelDraw(LAppModel &refModel)
 {
     // 別のレンダリングターゲットへ向けて描画する場合の使用するフレームバッファ
-    Csm::Rendering::CubismOffscreenSurface_OpenGLES2* useTarget = NULL;
+    Csm::Rendering::CubismOffscreenSurface_OpenGLES2 *useTarget = NULL;
 
     if (_renderTarget != SelectTarget_None)
-    {// 別のレンダリングターゲットへ向けて描画する場合
+    { // 別のレンダリングターゲットへ向けて描画する場合
 
         // 使用するターゲット
         useTarget = (_renderTarget == SelectTarget_ViewFrameBuffer) ? &_renderBuffer : &refModel.GetRenderBuffer();
@@ -306,12 +315,16 @@ void LAppView::PostModelDraw(LAppModel& refModel)
         if (_renderTarget == SelectTarget_ViewFrameBuffer && _renderSprite)
         {
             const GLfloat uvVertex[] =
-            {
-                1.0f, 1.0f,
-                0.0f, 1.0f,
-                0.0f, 0.0f,
-                1.0f, 0.0f,
-            };
+                {
+                    1.0f,
+                    1.0f,
+                    0.0f,
+                    1.0f,
+                    0.0f,
+                    0.0f,
+                    1.0f,
+                    0.0f,
+                };
 
             _renderSprite->SetColor(1.0f, 1.0f, 1.0f, GetSpriteAlpha(0));
 
@@ -337,7 +350,6 @@ void LAppView::SetRenderTargetClearColor(float r, float g, float b)
     _clearColor[2] = b;
 }
 
-
 float LAppView::GetSpriteAlpha(int assign) const
 {
     // assignの数値に応じて適当に決定
@@ -356,7 +368,7 @@ float LAppView::GetSpriteAlpha(int assign) const
 
 void LAppView::ResizeSprite()
 {
-    LAppTextureManager* textureManager = LAppDelegate::GetInstance()->GetTextureManager();
+    LAppTextureManager *textureManager = LAppDelegate::GetInstance()->GetTextureManager();
     if (!textureManager)
     {
         return;
@@ -364,7 +376,9 @@ void LAppView::ResizeSprite()
 
     // 描画領域サイズ
     int width, height;
-    glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &width, &height);
+    // glfwGetWindowSize(LAppDelegate::GetInstance()->GetWindow(), &width, &height);
+    width = RenderTargetWidth;
+    height = RenderTargetHeight;
 
     float x = 0.0f;
     float y = 0.0f;
@@ -374,7 +388,7 @@ void LAppView::ResizeSprite()
     if (_back)
     {
         GLuint id = _back->GetTextureId();
-        LAppTextureManager::TextureInfo* texInfo = textureManager->GetTextureInfoById(id);
+        LAppTextureManager::TextureInfo *texInfo = textureManager->GetTextureInfoById(id);
         if (texInfo)
         {
             x = width * 0.5f;
@@ -388,7 +402,7 @@ void LAppView::ResizeSprite()
     if (_power)
     {
         GLuint id = _power->GetTextureId();
-        LAppTextureManager::TextureInfo* texInfo = textureManager->GetTextureInfoById(id);
+        LAppTextureManager::TextureInfo *texInfo = textureManager->GetTextureInfoById(id);
         if (texInfo)
         {
             x = static_cast<float>(width - texInfo->width * 0.5f);
@@ -402,7 +416,7 @@ void LAppView::ResizeSprite()
     if (_gear)
     {
         GLuint id = _gear->GetTextureId();
-        LAppTextureManager::TextureInfo* texInfo = textureManager->GetTextureInfoById(id);
+        LAppTextureManager::TextureInfo *texInfo = textureManager->GetTextureInfoById(id);
         if (texInfo)
         {
             x = static_cast<float>(width - texInfo->width * 0.5f);
