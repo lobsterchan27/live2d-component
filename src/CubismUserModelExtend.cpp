@@ -455,7 +455,9 @@ void CubismUserModelExtend::ModelOnUpdate(GLFWwindow* window)
 {
     int width, height;
     // ウィンドウサイズを取得
-    glfwGetWindowSize(window, &width, &height);
+    // glfwGetWindowSize(window, &width, &height);
+    width = RenderTargetWidth;
+    height = RenderTargetHeight;
 
     Csm::CubismMatrix44 projection;
     // 念のため単位行列に初期化

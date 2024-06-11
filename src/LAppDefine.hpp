@@ -60,6 +60,11 @@ namespace LAppDefine {
     extern const CubismFramework::Option::LogLevel CubismLoggingLevel;
 
     // デフォルトのレンダーターゲットサイズ
-    extern const csmInt32 RenderTargetWidth;
-    extern const csmInt32 RenderTargetHeight;
+    extern csmInt32 RenderTargetWidth;
+    extern csmInt32 RenderTargetHeight;
+    extern csmFloat32 AudioDuration;
+    extern csmFloat32 VideoVDuration;
+    extern csmFloat32 VideoADuration;
+    extern csmFloat32 VideoFPS;
+    extern csmFloat32 postDuration;
 }

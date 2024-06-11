@@ -18,10 +18,10 @@
 
 #include "FloatingPlatform.hpp"
 #include <cstdio>
-#include <iostream>
 #include <string>
 // #include <windows.h>
 #include <fstream>
+#include <sstream>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -35,19 +35,100 @@ namespace FFmpegUtils
     FILE *startFFmpegProcess(
         csmUint32 width,
         csmUint32 height,
-        const std::string &audioFilePath,
-        const std::string &existingVideoPath,
-        const std::string &outputPath)
+        const string &audioFilePath,
+        const string &existingVideoPath,
+        const string &outputPath)
     {
         // Construct the FFmpeg command to overlay the RGBA frames onto the existing video
-        // std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height) +
-        //                       " -r 30 -pix_fmt rgba -i - -i \"" + existingVideoPath + "\" -i \"" + audioFilePath + "\" " +
-        //                       "-filter_complex \"[1:v][0:v] overlay=0:0\" " +
-        //                       "-c:v libx264 -preset medium -qp 23 -c:a copy \"" + outputPath + ".mp4\"";
+        string widthStr = std::to_string(width);
+        string heightStr = std::to_string(height);
 
-        std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height)
-        + " -r 30 -pix_fmt rgba -i - -i \"" + audioFilePath + "\" -c:v prores_ks -profile:v 4444 "
-        + "-pix_fmt yuva444p10le -c:a copy \"" + outputPath + ".mov\"";
+        string portraitImagePath = "static-portrait.png";
+        string landscapeImagePath = "static-landscape.png";
+        string staticImagePath = width > height ? landscapeImagePath : portraitImagePath;
+
+        csmFloat32 correctedVideoADuration = min(VideoADuration, VideoVDuration);
+        csmFloat32 remainingDuration = AudioDuration - correctedVideoADuration + postDuration;
+        csmFloat32 crossfadeDuration = 2.0f;
+
+        string VideoFPSStr = to_string(VideoFPS);
+        string gopSizeStr = to_string(VideoFPS/2);
+        string postDurationStr = to_string(postDuration);
+
+        string remainingDurationStr = std::to_string(remainingDuration);
+        string correctedVideoADurationStr = std::to_string(correctedVideoADuration);
+
+        string crossfadeDurationStr = std::to_string(crossfadeDuration);
+        string crossfadeAndRemainingDuration = std::to_string(crossfadeDuration + remainingDuration);
+
+        string bgmPath = "bgm.mp3";
+
+        string scaleFilter =
+            "[0:v]scale='if(gt(a," + widthStr + "/" + heightStr + ")," + heightStr + "*a," + widthStr + ")'"
+            ":'if(gt(a," + widthStr + "/" + heightStr + ")," + heightStr + "," + widthStr + "/a)':"
+            "flags=lanczos,crop=" + widthStr + ":" + heightStr + ","
+            "trim=duration=" + crossfadeAndRemainingDuration + ","
+            "fps=" + VideoFPSStr + ","
+            "settb=expr=1/30,format=rgba,setsar=1[scaled_img];";
+
+        string crossfadeFilter =
+            "[video_trimmed][scaled_img]xfade=transition=fade:duration=" + std::to_string(crossfadeDuration) +
+            ":offset=" + std::to_string(correctedVideoADuration - crossfadeDuration) + "[extended_video];";
+
+        string equalizer = "";
+            "equalizer=f=120:width_type=q:width=1.2:g=3.0,"
+            "equalizer=f=650:width_type=q:width=1:g=-3.5,"
+            "equalizer=f=5000:width_type=q:width=1.2:g=3.0,"
+            "equalizer=f=8000:width_type=q:width=15:g=-12,"
+            "equalizer=f=16000:width_type=q:width=1:g=3,";
+
+        string deesser =
+            "deesser=i=0.5:f=0.5:m=0.5:s=o,"
+            "deesser=i=0.4:f=0.2:m=0.2:s=o,"
+            "deesser=i=0.36:f=0:m=0:s=o,"
+            "deesser=i=0.37:f=0:m=0:s=o,"
+            "deesser=i=0.37:f=0:m=0:s=o,"
+            "deesser=i=0.37:f=0:m=0:s=o,";
+
+        string compressor = 
+            "";
+
+        string voice =
+            "[3:a]afftdn=nf=-80:tn=1:tr=1:om=o,"
+            "agate=threshold=-35dB:attack=20:release=100:ratio=2,"
+            "highpass=f=50:width_type=o:width=2," + deesser + equalizer + 
+            "atrim=start=0.025,pan=stereo|c0<c0|c1<c0[voice];";
+
+        string command =
+            string("ffmpeg -y") +
+            " -loop 1 -t " + crossfadeAndRemainingDuration + " -i " + staticImagePath + // Loop the static image
+            " -f rawvideo -vcodec rawvideo -video_size " + widthStr + "x" + heightStr +
+            " -r " + VideoFPSStr + " -pix_fmt rgba -thread_queue_size 1024 -i -" + // Raw video input
+            " -hwaccel cuda -i \"" + existingVideoPath + "\"" +                                  // Existing video file
+            " -i \"" + audioFilePath + "\"" +                                      // Audio file
+            " -i \"" + bgmPath + "\"" +                                            // Background music
+            " -filter_complex \"" +
+            scaleFilter +
+            "[2:v]trim=duration=" + correctedVideoADurationStr + ",settb=expr=1/30[video_trimmed];" + // Trim the existing video
+            crossfadeFilter +                                                                         // Crossfade video and static image
+            "[extended_video][1:v]overlay=format=yuv420[outv];" +                                     // Overlay raw video onto the extended base video
+            "[2:a]atrim=0:" + correctedVideoADurationStr + "[audio1];" +                              // Trim audio file to corrected duration
+            "[4:a]atrim=0:" + crossfadeAndRemainingDuration + ",volume=0.15" + "[audio2];" +           // Trim BGM to remaining duration
+            "[audio1][audio2]acrossfade=d=" + crossfadeDurationStr + "[extended_audio];" +            // Concat video audio and BGM audio
+            voice +                                                                                   // Noise Reduction
+            "[voice]asplit=2[mix_voice][duck_voice];"
+            "[duck_voice]apad=pad_dur=" + postDurationStr + "[duck_voice_pad];"                                                 // ffmpeg can't reuse the same audio stream for multiple filters
+            "[extended_audio][duck_voice_pad]sidechaincompress=threshold=0.05:ratio=4:attack=4:knee=3:release=1000[ducked_audio];"
+            "[mix_voice][ducked_audio]amix=inputs=2:duration=longest:dropout_transition=0.5[outa]\"" + // Mix the audio streams
+            " -map \"[outv]\"" +                                                                      // Map the video output
+            " -map \"[outa]\"" +                                                                      // Map the audio output
+            " -c:v h264_nvenc -cq 20 -pix_fmt yuv420p -bf 2 -preset slow -profile:v high -g " + gopSizeStr + " -r " + VideoFPSStr + // Video codec settings
+            " -c:a aac -b:a 384k" +                                                                   // Audio codec settings
+            // " -shortest" +
+            " -f mp4 \"" + outputPath + ".mp4" + "\"";
+
+        // For the transparency model only
+        // std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height) + " -r 30 -pix_fmt rgba -i - -i \"" + audioFilePath + "\" -c:v prores_ks -profile:v 4444 " + "-pix_fmt yuva444p10le -c:a copy \"" + outputPath + ".mov\"";
 
         // Open a pipe to the FFmpeg process
         FILE *ffmpeg = _popen(command.c_str(), "wb");
@@ -74,6 +155,90 @@ namespace FFmpegUtils
         if (ffmpeg)
         {
             _pclose(ffmpeg);
+        }
+    }
+
+    void getVideoInfo(const std::string &videoPath)
+    {
+        std::string command = "ffprobe -v error -show_entries stream=codec_type,width,height,r_frame_rate,duration "
+                              "-of ini \"" +
+                              videoPath + "\"";
+
+        FILE *pipe = _popen(command.c_str(), "r");
+        if (!pipe)
+        {
+            std::cerr << "Failed to start ffprobe process.\n";
+            return;
+        }
+
+        char buffer[128];
+        std::string output;
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+        {
+            output += buffer;
+        }
+        _pclose(pipe);
+
+        std::cout << "FFprobe output: " << output << std::endl;
+
+        // Parse the ini output
+        std::istringstream stream(output);
+        std::string line;
+        std::string currentCodecType;
+
+        while (std::getline(stream, line))
+        {
+            if (line.empty() || line[0] == '#')
+            {
+                continue; // Skip empty lines and comments
+            }
+            else if (line[0] == '[' && line[line.size() - 1] == ']')
+            {
+                // Section header
+                currentCodecType.clear();
+            }
+            else
+            {
+                auto delimiterPos = line.find('=');
+                if (delimiterPos != std::string::npos)
+                {
+                    std::string key = line.substr(0, delimiterPos);
+                    std::string value = line.substr(delimiterPos + 1);
+
+                    if (key == "codec_type")
+                    {
+                        currentCodecType = value;
+                    }
+                    else if (currentCodecType == "video")
+                    {
+                        if (key == "width")
+                        {
+                            RenderTargetWidth = std::stoi(value);
+                        }
+                        else if (key == "height")
+                        {
+                            RenderTargetHeight = std::stoi(value);
+                        }
+                        else if (key == "r_frame_rate")
+                        {
+                            int num = std::stoi(value.substr(0, value.find('/')));
+                            int den = std::stoi(value.substr(value.find('/') + 1));
+                            VideoFPS = static_cast<float>(num) / den;
+                        }
+                        else if (key == "duration")
+                        {
+                            VideoVDuration = std::stof(value);
+                        }
+                    }
+                    else if (currentCodecType == "audio")
+                    {
+                        if (key == "duration")
+                        {
+                            VideoADuration = std::stof(value);
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -142,6 +307,11 @@ bool LAppDelegate::Initialize()
     _videoFilePath = platform->getVideoFilePath();
     _outputPath = platform->getOutputPath();
 
+    FFmpegUtils::getVideoInfo(_videoFilePath);
+    // cout << "Video resolution: " << RenderTargetWidth << "x" << RenderTargetHeight << endl;
+    // cout << "Video duration: " << VideoVDuration << " seconds" << endl;
+    // cout << "Audio duration: " << VideoADuration << " seconds" << endl;
+
     // GLFWの初期化
     if (glfwInit() == GL_FALSE)
     {
@@ -154,7 +324,7 @@ bool LAppDelegate::Initialize()
 
     // Windowの生成_
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    _window = glfwCreateWindow(RenderTargetWidth, RenderTargetHeight, "Live2D ROX", NULL, NULL);
+    _window = glfwCreateWindow(1, 1, "Live2D ROX", NULL, NULL);
     if (_window == NULL)
     {
         if (DebugLogEnable)
@@ -253,14 +423,15 @@ void LAppDelegate::Release()
 void LAppDelegate::Run()
 {
     // initial parameters
-    double targetFPS = 30.0;
-    double deltaTime = 1.0 / targetFPS;
+    double targetFPS = VideoFPS;
+    double deltaTimeInterval = 1.0 / targetFPS;
+    csmFloat32 deltaTime;
 
     _wavFileHandler->Start(_audioFilePath.c_str());
     const LAppWavFileHandler::WavFileInfo &fileInfo = _wavFileHandler->GetWavFileInfo();
-    _wavFileHandler->ComputeMaxRMS(deltaTime);
+    _wavFileHandler->ComputeMaxRMS(deltaTimeInterval);
 
-    float audioDurationSeconds = static_cast<float>(fileInfo._samplesPerChannel) / fileInfo._samplingRate;
+    AudioDuration = static_cast<float>(fileInfo._samplesPerChannel) / fileInfo._samplingRate;
 
     initializePBOs(RenderTargetWidth, RenderTargetHeight); // Assume this function initializes PBOs
 
@@ -269,13 +440,14 @@ void LAppDelegate::Run()
 
     // Main loop
     _finalFbo->BeginDraw();
-    while (glfwWindowShouldClose(_window) == GL_FALSE && !_isEnd && elapsedSeconds < audioDurationSeconds)
+    while (glfwWindowShouldClose(_window) == GL_FALSE && !_isEnd && elapsedSeconds < (AudioDuration + postDuration))
     {
 
         LAppPal::UpdateTimeFPS(targetFPS);
-        csmFloat32 deltaTime = LAppPal::GetDeltaTime();
+        deltaTime = LAppPal::GetDeltaTime();
         elapsedSeconds += deltaTime;
 
+        glViewport(0, 0, RenderTargetWidth, RenderTargetHeight);
         // Draw to FBO
         // _finalFbo->BeginDraw();
         glClearDepth(1.0);
