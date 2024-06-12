@@ -52,6 +52,7 @@ namespace FFmpegUtils
         csmFloat32 crossfadeDuration = 2.0f;
 
         string VideoFPSStr = to_string(VideoFPS);
+        string timebase = "1/" + VideoFPSStr;
         string gopSizeStr = to_string(VideoFPS/2);
         string postDurationStr = to_string(postDuration);
 
@@ -69,7 +70,7 @@ namespace FFmpegUtils
             "flags=lanczos,crop=" + widthStr + ":" + heightStr + ","
             "trim=duration=" + crossfadeAndRemainingDuration + ","
             "fps=" + VideoFPSStr + ","
-            "settb=expr=1/30,format=rgba,setsar=1[scaled_img];";
+            "settb=expr=" + timebase + ",format=yuv420p,setsar=1[scaled_img];";
 
         string crossfadeFilter =
             "[video_trimmed][scaled_img]xfade=transition=fade:duration=" + std::to_string(crossfadeDuration) +
@@ -109,7 +110,7 @@ namespace FFmpegUtils
             " -i \"" + bgmPath + "\"" +                                            // Background music
             " -filter_complex \"" +
             scaleFilter +
-            "[2:v]trim=duration=" + correctedVideoADurationStr + ",settb=expr=1/30[video_trimmed];" + // Trim the existing video
+            "[2:v]trim=duration=" + correctedVideoADurationStr + ",fps=fps=" + VideoFPSStr + ",settb=expr=" + timebase + "[video_trimmed];" + // Trim the existing video
             crossfadeFilter +                                                                         // Crossfade video and static image
             "[extended_video][1:v]overlay=format=yuv420[outv];" +                                     // Overlay raw video onto the extended base video
             "[2:a]atrim=0:" + correctedVideoADurationStr + "[audio1];" +                              // Trim audio file to corrected duration

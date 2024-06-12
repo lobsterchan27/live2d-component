@@ -68,6 +68,6 @@ namespace LAppDefine {
     csmFloat32 AudioDuration = 0.0f;
     csmFloat32 VideoVDuration = 0.0f;
     csmFloat32 VideoADuration = 0.0f;
-    csmFloat32 VideoFPS = 0.0f;
+    double VideoFPS = 0.0f;
     csmFloat32 postDuration = 5.0f;
 }

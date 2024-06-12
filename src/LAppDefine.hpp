@@ -65,6 +65,6 @@ namespace LAppDefine {
     extern csmFloat32 AudioDuration;
     extern csmFloat32 VideoVDuration;
     extern csmFloat32 VideoADuration;
-    extern csmFloat32 VideoFPS;
+    extern double VideoFPS;
     extern csmFloat32 postDuration;
 }
