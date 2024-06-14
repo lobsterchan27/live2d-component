@@ -7,9 +7,66 @@
 
 #include "LAppDelegate.hpp"
 #include "FloatingPlatform.hpp"
+#include "LAppDefine.hpp"
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <windows.h>
+#include <vector>
+#include <sstream>
+
+std::string GetExecutableDirectory() {
+    char path[MAX_PATH];
+    GetModuleFileName(NULL, path, MAX_PATH);
+    std::string exePath(path);
+    return exePath.substr(0, exePath.find_last_of("\\/"));
+}
+
+std::string GetCurrentWorkingDirectory() {
+    char cwd[MAX_PATH];
+    GetCurrentDirectory(MAX_PATH, cwd);
+    return std::string(cwd);
+}
+
+std::vector<std::string> SplitPath(const std::string& path) {
+    std::vector<std::string> parts;
+    std::stringstream pathStream(path);
+    std::string part;
+    while (getline(pathStream, part, '\\')) {
+        if (!part.empty())
+            parts.push_back(part);
+    }
+    return parts;
+}
+
+std::string ComputeRelativePath(const std::string& from, const std::string& to) {
+    std::vector<std::string> fromParts = SplitPath(from);
+    std::vector<std::string> toParts = SplitPath(to);
+    auto fromIt = fromParts.begin();
+    auto toIt = toParts.begin();
+
+    // Skip common parts
+    while (fromIt != fromParts.end() && toIt != toParts.end() && *fromIt == *toIt) {
+        ++fromIt;
+        ++toIt;
+    }
+
+    // Create the relative path
+    std::string relativePath;
+    for (; fromIt != fromParts.end(); ++fromIt) {
+        relativePath += "..\\";
+    }
+    for (; toIt != toParts.end(); ++toIt) {
+        relativePath += *toIt + '\\';
+    }
+
+    // Remove the last backslash
+    if (!relativePath.empty() && relativePath.back() == '\\') {
+        relativePath.pop_back();
+    }
+
+    return relativePath.empty() ? "." : relativePath;
+}
 
 // Function to find a command line argument and return its value
 std::string getCmdOption(char **begin, char **end, const std::string &option)
@@ -38,6 +95,18 @@ int main(int argc, char *argv[])
     }
 
     // Parse the command line arguments
+    std::string exeDir = GetExecutableDirectory();
+    std::string cwd = GetCurrentWorkingDirectory();
+    std::cout << "cwd: " << cwd << std::endl;
+    std::cout << "exeDir: " << exeDir << std::endl;
+    std::string resourcesDir = GetExecutableDirectory() + "\\Resources/";
+    std::string relativePath = ComputeRelativePath(cwd, resourcesDir);
+
+    LAppDefine::ResourcesPath = new char[relativePath.size() + 1];
+    strcpy(LAppDefine::ResourcesPath, relativePath.c_str());
+    
+    std::cout << "Resources path: " << LAppDefine::ResourcesPath << std::endl;
+
     std::string audioFilePath = getCmdOption(argv, argv + argc, "-a");
     std::string videoFilePath = getCmdOption(argv, argv + argc, "-v");
     std::string outputPath = getCmdOption(argv, argv + argc, "-o");

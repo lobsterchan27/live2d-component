@@ -164,7 +164,7 @@ void LAppView::InitializeSprite()
     height = RenderTargetHeight;
 
     LAppTextureManager *textureManager = LAppDelegate::GetInstance()->GetTextureManager();
-    const string resourcesPath = ResourcesPath;
+    // const string resourcesPath = ResourcesPath;
 
     // #lobby sprites initialization
 

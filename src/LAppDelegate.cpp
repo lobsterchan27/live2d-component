@@ -40,11 +40,12 @@ namespace FFmpegUtils
         const string &outputPath)
     {
         // Construct the FFmpeg command to overlay the RGBA frames onto the existing video
+        string ResourcesPathStr(ResourcesPath);
         string widthStr = std::to_string(width);
         string heightStr = std::to_string(height);
 
-        string portraitImagePath = "static-portrait.png";
-        string landscapeImagePath = "static-landscape.png";
+        string portraitImagePath = ResourcesPathStr + "static-portrait.png";
+        string landscapeImagePath = ResourcesPathStr + "static-landscape.png";
         string staticImagePath = width > height ? landscapeImagePath : portraitImagePath;
 
         csmFloat32 correctedVideoADuration = min(VideoADuration, VideoVDuration);
@@ -62,7 +63,7 @@ namespace FFmpegUtils
         string crossfadeDurationStr = std::to_string(crossfadeDuration);
         string crossfadeAndRemainingDuration = std::to_string(crossfadeDuration + remainingDuration);
 
-        string bgmPath = "bgm.mp3";
+        string bgmPath = ResourcesPathStr + "bgm.mp3";
 
         string scaleFilter =
             "[0:v]scale='if(gt(a," + widthStr + "/" + heightStr + ")," + heightStr + "*a," + widthStr + ")'"
