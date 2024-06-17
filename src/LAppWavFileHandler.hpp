@@ -246,5 +246,4 @@ private:
     // I put this here #lobby
     Csm::csmFloat32 _maxRms; ///< max RMS value for audio rescaling
     Csm::csmFloat32 _scaledRms;
-
  };

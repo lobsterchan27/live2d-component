@@ -20,6 +20,8 @@
 #include "LAppPal.hpp"
 #include "LAppTextureManager.hpp"
 #include "LAppDelegate.hpp"
+#include <iostream>
+#include "LAppLive2DManager.hpp"
 
 using namespace Live2D::Cubism::Framework;
 using namespace Live2D::Cubism::Framework::DefaultParameterId;
@@ -258,6 +260,8 @@ void LAppModel::SetupModel(ICubismModelSetting *setting)
 
     _updating = false;
     _initialized = true;
+    _currentMotionIndex = 0;
+    _currentGroupIndex = 0;
 }
 
 void LAppModel::PreloadMotionGroup(const csmChar *group)
@@ -351,6 +355,33 @@ void LAppModel::ReleaseExpressions()
     _expressions.Clear();
 }
 
+void LAppModel::StartNextMotion(csmInt32 priority)
+{
+    const csmChar *group = _modelSetting->GetMotionGroupName(_currentGroupIndex);
+
+    csmInt32 groupCount = _modelSetting->GetMotionGroupCount();
+    csmInt32 motionCount = _modelSetting->GetMotionCount(group);
+    if (_currentMotionIndex >= motionCount)
+    {
+        _currentMotionIndex = 0;
+        _currentGroupIndex++;
+
+        if (_currentGroupIndex >= groupCount)
+        {
+            LAppDelegate::GetInstance()->SetIsEnd(true);
+            return;
+        }
+        group = _modelSetting->GetMotionGroupName(_currentGroupIndex);
+        motionCount = _modelSetting->GetMotionCount(group);
+    }
+
+    // Start the motion
+    StartMotion(group, _currentMotionIndex, priority, LAppLive2DManager::FinishedMotionStatic);
+
+    // Move to the next motion
+    ++_currentMotionIndex;
+}
+
 void LAppModel::Update()
 {
     const csmFloat32 deltaTimeSeconds = LAppPal::GetDeltaTime();
@@ -369,6 +400,10 @@ void LAppModel::Update()
     {
         // モーションの再生がない場合、待機モーションの中からランダムで再生する
         StartRandomMotion(MotionGroupIdle, PriorityIdle);
+        // if (!LAppDelegate::GetInstance()->GetIsEnd())
+        // {
+        //     StartNextMotion(PriorityIdle);
+        // }
     }
     else
     {
@@ -443,7 +478,7 @@ void LAppModel::Update()
             LAppPal::PrintLog("Warning: WAV file handler not initialized.");
         }
     }
-    
+
     // ポーズの設定
     if (_pose != NULL)
     {
@@ -510,13 +545,13 @@ CubismMotionQueueEntryHandle LAppModel::StartMotion(const csmChar *group, csmInt
     }
 
     // voice
-    csmString voice = _modelSetting->GetMotionSoundFileName(group, no);
-    if (strcmp(voice.GetRawString(), "") != 0)
-    {
-        csmString path = voice;
-        path = _modelHomeDir + path;
-        _wavFileHandler.Start(path);
-    }
+    // csmString voice = _modelSetting->GetMotionSoundFileName(group, no);
+    // if (strcmp(voice.GetRawString(), "") != 0)
+    // {
+    //     csmString path = voice;
+    //     path = _modelHomeDir + path;
+    //     _wavFileHandler.Start(path);
+    // }
 
     if (_debugMode)
     {

@@ -233,7 +233,7 @@ void LAppView::OnTouchesEnded(float px, float py) const
         }
         live2DManager->OnTap(x, y);
 
-        // // 歯車にタップしたか
+        // 歯車にタップしたか
         // if (_gear->IsHit(px, py))
         // {
         //     live2DManager->NextScene();

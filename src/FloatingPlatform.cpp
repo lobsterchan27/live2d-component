@@ -53,6 +53,14 @@ std::string FloatingPlatform::getOutputPath() const {
     return _outputPath;
 }
 
+void FloatingPlatform::setElapsedSeconds(float* elapsedSeconds) {
+    _elapsedSeconds = elapsedSeconds;
+}
+
+float* FloatingPlatform::getElapsedSeconds() const {
+    return _elapsedSeconds;
+}
+
 FloatingPlatform::FloatingPlatform()
     : _wavFileHandler(nullptr) {
 }

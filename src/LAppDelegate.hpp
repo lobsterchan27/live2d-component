@@ -92,6 +92,8 @@ public:
     */
     bool GetIsEnd() { return _isEnd; }
 
+    void SetIsEnd(bool isEnd) { _isEnd = isEnd; }
+
     /**
     * @brief   アプリケーションを終了する。
     */

@@ -78,7 +78,7 @@ void LAppPal::ReleaseBytes(csmByte* byteData)
     delete[] byteData;
 }
 
-csmFloat32  LAppPal::GetDeltaTime()
+csmFloat32 LAppPal::GetDeltaTime()
 {
     return static_cast<csmFloat32>(s_deltaTime);
 }

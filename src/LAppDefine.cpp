@@ -41,6 +41,8 @@ namespace LAppDefine {
     // 外部定義ファイル(json)と合わせる
     const csmChar* MotionGroupIdle = "Idle"; // アイドリング
     const csmChar* MotionGroupTapBody = "TapBody"; // 体をタップしたとき
+    const csmChar* MotionGroupReaction = "Reaction"; // リアクション
+    const csmChar* MotionGroupNegativeReaction = "NegativeReaction"; // ネガティブリアクション
 
     // 外部定義ファイル(json)と合わせる
     const csmChar* HitAreaNameHead = "Head";
@@ -63,11 +65,13 @@ namespace LAppDefine {
     const CubismFramework::Option::LogLevel CubismLoggingLevel = CubismFramework::Option::LogLevel_Verbose;
 
     // デフォルトのレンダーターゲットサイズ
-    csmInt32 RenderTargetWidth = 0;
-    csmInt32 RenderTargetHeight = 0;
+    csmInt32 RenderTargetWidth = 1080;
+    csmInt32 RenderTargetHeight = 1920;
     csmFloat32 AudioDuration = 0.0f;
     csmFloat32 VideoVDuration = 0.0f;
     csmFloat32 VideoADuration = 0.0f;
     double VideoFPS = 0.0f;
     csmFloat32 postDuration = 5.0f;
+
+    csmFloat32 deltaTime = 0.0f;
 }

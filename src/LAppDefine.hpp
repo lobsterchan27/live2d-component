@@ -39,6 +39,8 @@ namespace LAppDefine {
                                                     // 外部定義ファイル(json)と合わせる
     extern const csmChar* MotionGroupIdle;          ///< アイドリング時に再生するモーションのリスト
     extern const csmChar* MotionGroupTapBody;       ///< 体をタップした時に再生するモーションのリスト
+    extern const csmChar* MotionGroupReaction;
+    extern const csmChar* MotionGroupNegativeReaction;
 
                                                     // 外部定義ファイル(json)と合わせる
     extern const csmChar* HitAreaNameHead;          ///< 当たり判定の[Head]タグ
@@ -67,4 +69,6 @@ namespace LAppDefine {
     extern csmFloat32 VideoADuration;
     extern double VideoFPS;
     extern csmFloat32 postDuration;
+
+    extern csmFloat32 deltaTime;
 }

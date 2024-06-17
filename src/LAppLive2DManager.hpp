@@ -10,6 +10,8 @@
 #include <CubismFramework.hpp>
 #include <Math/CubismMatrix44.hpp>
 #include <Type/csmVector.hpp>
+#include <Motion/ACubismMotion.hpp>
+
 
 class LAppModel;
 
@@ -82,13 +84,13 @@ public:
     * @param[in]   x   画面のX座標
     * @param[in]   y   画面のY座標
     */
-    void OnTap(Csm::csmFloat32 x, Csm::csmFloat32 y);
+    void OnTap(Csm::csmFloat32 x, Csm::csmFloat32 y) const;
 
     /**
     * @brief   画面を更新するときの処理
     *          モデルの更新処理および描画処理を行う
     */
-    void OnUpdate() const;
+    void OnUpdate();
 
     /**
     * @brief   次のシーンに切り替える<br>
@@ -113,11 +115,19 @@ public:
      */
     void SetViewMatrix(Live2D::Cubism::Framework::CubismMatrix44* m);
 
+    static void FinishedMotionStatic(Live2D::Cubism::Framework::ACubismMotion* self);
+
 private:
     /**
     * @brief  コンストラクタ
     */
     LAppLive2DManager();
+
+    void SetFinishedMotionTime();
+
+    void UpdateTalkAndSilenceDuration();
+
+    void UpdateMotionTime();
 
     /**
     * @brief  デストラクタ
@@ -129,4 +139,16 @@ private:
     Csm::csmInt32 _sceneIndex; ///< 表示するシーンのインデックス値
 
     Csm::csmVector<Csm::csmString> _modelDir; ///< モデルディレクトリ名のコンテナ
+
+    // lobby put this here
+    float _finishedMotionTime;
+    float* _elapsedTime;
+
+    Csm::csmBool _isTalking;
+    Csm::csmFloat32 _talkDuration;
+    Csm::csmFloat32 _silenceDuration;
+    Csm::csmFloat32 _potentialSilenceDuration;
+    Csm::csmFloat32 _silenceThreshold;
+    Csm::csmFloat32 _lastMotionTime;
+    Csm::csmBool _isMotion;
 };

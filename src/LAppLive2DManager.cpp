@@ -17,9 +17,9 @@
 #include "LAppDelegate.hpp"
 #include "LAppModel.hpp"
 #include "LAppView.hpp"
+#include <iostream>
 
 #include "FloatingPlatform.hpp"
-
 
 using namespace Csm;
 using namespace LAppDefine;
@@ -38,6 +38,11 @@ namespace
     {
         return strcmp(reinterpret_cast<const Csm::csmString *>(a)->GetRawString(),
                       reinterpret_cast<const Csm::csmString *>(b)->GetRawString());
+    }
+
+    float getRandomFloat(float min, float max)
+    {
+        return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
     }
 }
 
@@ -62,18 +67,71 @@ void LAppLive2DManager::ReleaseInstance()
 }
 
 LAppLive2DManager::LAppLive2DManager()
-    : _viewMatrix(NULL), _sceneIndex(0)
+    : _viewMatrix(NULL),
+      _sceneIndex(0),
+      _isTalking(false),
+      _talkDuration(0.0f),
+      _silenceDuration(0.0f),
+      _potentialSilenceDuration(0.0f),
+      _silenceThreshold(0.8f),
+      _lastMotionTime(0.0f),
+      _isMotion(false)
 {
     _viewMatrix = new CubismMatrix44();
     SetUpModel();
 
     ChangeScene(_sceneIndex);
+    _elapsedTime = FloatingPlatform::getInstance()->getElapsedSeconds();
 }
 
 LAppLive2DManager::~LAppLive2DManager()
 {
     ReleaseAllModel();
     delete _viewMatrix;
+}
+
+void LAppLive2DManager::SetFinishedMotionTime()
+{
+    _finishedMotionTime = *_elapsedTime;
+}
+
+void LAppLive2DManager::UpdateTalkAndSilenceDuration()
+{
+    FloatingPlatform *platform = FloatingPlatform::getInstance();
+    LAppWavFileHandler *handler = platform->getWavFileHandler();
+    csmFloat32 rms = handler->GetRms(true);
+    if (rms > 0.00f)
+    {
+        _isTalking = true;
+        _talkDuration += deltaTime;
+        _silenceDuration = 0.0f;          // Reset silence duration
+        _potentialSilenceDuration = 0.0f; // Reset potential silence duration
+    }
+
+    if (_isTalking)
+    {
+        _potentialSilenceDuration += deltaTime;
+        if (_potentialSilenceDuration >= _silenceThreshold)
+        {
+            _isTalking = false;
+            _talkDuration = 0.0f;
+            _silenceDuration = _potentialSilenceDuration;
+            _potentialSilenceDuration = 0.0f;
+        }
+    }
+    else
+    {
+        _silenceDuration += deltaTime;
+    }
+
+    // if (_talkDuration > 0.0f)
+    // {
+    //     cout << "Talk Duration: " << _talkDuration << " seconds" << endl;
+    // }
+    // else if (_silenceDuration > 0.0f)
+    // {
+    //     cout << "Silence Duration: " << _silenceDuration << " seconds" << endl;
+    // }
 }
 
 void LAppLive2DManager::ReleaseAllModel()
@@ -151,7 +209,7 @@ void LAppLive2DManager::OnDrag(csmFloat32 x, csmFloat32 y) const
     }
 }
 
-void LAppLive2DManager::OnTap(csmFloat32 x, csmFloat32 y)
+void LAppLive2DManager::OnTap(csmFloat32 x, csmFloat32 y) const
 {
     if (DebugLogEnable)
     {
@@ -179,7 +237,20 @@ void LAppLive2DManager::OnTap(csmFloat32 x, csmFloat32 y)
     }
 }
 
-void LAppLive2DManager::OnUpdate() const
+void LAppLive2DManager::FinishedMotionStatic(ACubismMotion *self)
+{
+    LAppLive2DManager *manager = LAppLive2DManager::GetInstance();
+    manager->UpdateMotionTime();
+    manager->_isMotion = false;
+    LAppPal::PrintLogLn("Motion Finished: %x", self);
+}
+
+void LAppLive2DManager::UpdateMotionTime()
+{
+    _lastMotionTime = *_elapsedTime;
+}
+
+void LAppLive2DManager::OnUpdate()
 {
     int width, height;
     float modelScale, correctionValueX, correctionValueY;
@@ -191,6 +262,7 @@ void LAppLive2DManager::OnUpdate() const
     csmUint32 modelCount = _models.GetSize();
     for (csmUint32 i = 0; i < modelCount; ++i)
     {
+        // _models[i]->SetRandomExpression();
         CubismMatrix44 projection;
         LAppModel *model = GetModel(i);
         CubismModel *csmModel = model->GetModel();
@@ -219,7 +291,7 @@ void LAppLive2DManager::OnUpdate() const
             projection.MultiplyByMatrix(_viewMatrix);
         }
 
-        // モデル1体描画前コール
+        // // モデル1体描画前コール
         // LAppDelegate::GetInstance()->GetView()->PreModelDraw(*model);
 
         // #lobby translation matrix/projection matrix
@@ -233,10 +305,12 @@ void LAppLive2DManager::OnUpdate() const
         // Model scale calculation
         modelScale = m * aspectRatio + c;
 
-        if (modelScale > maxScale) {
+        if (modelScale > maxScale)
+        {
             modelScale = maxScale;
         }
-        else if (modelScale < minScale) {
+        else if (modelScale < minScale)
+        {
             modelScale = minScale;
         }
 
@@ -246,11 +320,19 @@ void LAppLive2DManager::OnUpdate() const
 
         // dividing by 2 to get half the width
         offsetY = correctionValueY / 2 * 0.64f;
-        offsetX = correctionValueX / 2; 
+        offsetX = correctionValueX / 2;
         offsetX = offsetX - (offsetX * 0.64f); // White Space offsetting.
 
         projection.TranslateY(-1.0f - offsetY);
         projection.TranslateX(1.0f - offsetX);
+
+        UpdateTalkAndSilenceDuration();
+        float randomInterval = getRandomFloat(1.0f, 5.0f);
+        if (*_elapsedTime - _lastMotionTime > randomInterval && !_isMotion)
+        {
+            _isMotion = true;
+            model->StartRandomMotion(MotionGroupReaction, PriorityNormal, FinishedMotionStatic);
+        }
 
         model->Update();
         model->Draw(projection); ///< 参照渡しなのでprojectionは変質する

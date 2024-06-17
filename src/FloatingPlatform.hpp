@@ -23,12 +23,18 @@ public:
     void setOutputPath(const std::string &path);
     std::string getOutputPath() const;
 
+    void setElapsedSeconds(float* elapsedSeconds);
+
+    float* getElapsedSeconds() const;
+
 private:
     FloatingPlatform();
 
     ~FloatingPlatform();
 
     LAppWavFileHandler *_wavFileHandler;
+
+    float* _elapsedSeconds;
 
     // Member variables to store CLI arguments
     std::string _audioFilePath;

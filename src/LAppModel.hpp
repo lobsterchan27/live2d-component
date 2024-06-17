@@ -177,6 +177,8 @@ private:
     */
     void ReleaseExpressions();
 
+    void StartNextMotion(Csm::csmInt32 priority);
+
     Csm::ICubismModelSetting* _modelSetting; ///< モデルセッティング情報
     Csm::csmString _modelHomeDir; ///< モデルセッティングが置かれたディレクトリ
     Csm::csmFloat32 _userTimeSeconds; ///< デルタ時間の積算値[秒]
@@ -194,7 +196,11 @@ private:
     const Csm::CubismId* _idParamEyeBallY; ///< パラメータID: ParamEyeBallXY
 
     LAppWavFileHandler _wavFileHandler; ///< wavファイルハンドラ
+
+    // lobby put this here
     LAppWavFileHandler* _lifetimeWavFileHandler;
+    Csm::csmInt32 _currentMotionIndex;
+    Csm::csmInt32 _currentGroupIndex;
 
     Csm::Rendering::CubismOffscreenSurface_OpenGLES2  _renderBuffer;   ///< フレームバッファ以外の描画先
 };

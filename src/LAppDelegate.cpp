@@ -16,6 +16,8 @@
 #include "LAppTextureManager.hpp"
 #include <Rendering/OpenGL/CubismOffscreenSurface_OpenGLES2.hpp>
 
+#include "LAppModel.hpp"
+
 #include "FloatingPlatform.hpp"
 #include <cstdio>
 #include <string>
@@ -131,6 +133,16 @@ namespace FFmpegUtils
 
         // For the transparency model only
         // std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height) + " -r 30 -pix_fmt rgba -i - -i \"" + audioFilePath + "\" -c:v prores_ks -profile:v 4444 " + "-pix_fmt yuva444p10le -c:a copy \"" + outputPath + ".mov\"";
+
+        // Video for Thumbs
+        // std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height) + 
+        //                   " -r 30 -pix_fmt rgba -i - -c:v prores_ks -profile:v 4444 " +
+        //                   "-pix_fmt yuva444p10le \"" + outputPath + ".mov\"";
+        
+        // Thumbs
+        // std::string outputFolder = "output_images";
+        // std::string command = "ffmpeg -y -f rawvideo -vcodec rawvideo -s " + std::to_string(width) + "x" + std::to_string(height) + 
+        //               " -pix_fmt rgba -i - \"" + outputFolder + "/" + outputPath + "_frame%04d.png\"";
 
         // Open a pipe to the FFmpeg process
         FILE *ffmpeg = _popen(command.c_str(), "wb");
@@ -309,7 +321,11 @@ bool LAppDelegate::Initialize()
     _videoFilePath = platform->getVideoFilePath();
     _outputPath = platform->getOutputPath();
 
+    platform->setElapsedSeconds(&elapsedSeconds);
+
     FFmpegUtils::getVideoInfo(_videoFilePath);
+    // RenderTargetHeight = 1920;
+    // RenderTargetWidth = 1080;
     // cout << "Video resolution: " << RenderTargetWidth << "x" << RenderTargetHeight << endl;
     // cout << "Video duration: " << VideoVDuration << " seconds" << endl;
     // cout << "Audio duration: " << VideoADuration << " seconds" << endl;
@@ -426,8 +442,7 @@ void LAppDelegate::Run()
 {
     // initial parameters
     double targetFPS = VideoFPS;
-    double deltaTimeInterval = 1.0 / targetFPS;
-    csmFloat32 deltaTime;
+    float deltaTimeInterval = 1.0 / targetFPS;
 
     _wavFileHandler->Start(_audioFilePath.c_str());
     const LAppWavFileHandler::WavFileInfo &fileInfo = _wavFileHandler->GetWavFileInfo();
@@ -442,11 +457,14 @@ void LAppDelegate::Run()
 
     // Main loop
     _finalFbo->BeginDraw();
+    // while (glfwWindowShouldClose(_window) == GL_FALSE && !_isEnd)
+    // {
     while (glfwWindowShouldClose(_window) == GL_FALSE && !_isEnd && elapsedSeconds < (AudioDuration + postDuration))
     {
         LAppPal::UpdateTimeFPS(targetFPS);
         deltaTime = LAppPal::GetDeltaTime();
         elapsedSeconds += deltaTime;
+        // cout << "elapsed: " << elapsedSeconds << "rms value: " << FloatingPlatform::getInstance()->getWavFileHandler()->GetRms(true) << endl;
 
         glViewport(0, 0, RenderTargetWidth, RenderTargetHeight);
         // Draw to FBO
@@ -520,7 +538,8 @@ void LAppDelegate::InitializeCubism()
     CubismFramework::Initialize();
 
     // load model
-    LAppLive2DManager::GetInstance();
+    LAppLive2DManager *live2DManager = LAppLive2DManager::GetInstance();
+
 
     // default proj #lobby
     // this is NOT being used for whatever reason
