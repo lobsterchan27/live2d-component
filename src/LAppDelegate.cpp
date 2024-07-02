@@ -116,7 +116,7 @@ namespace FFmpegUtils
             "[2:v]trim=duration=" + correctedVideoADurationStr + ",fps=fps=" + VideoFPSStr + ",settb=expr=" + timebase + "[video_trimmed];" + // Trim the existing video
             crossfadeFilter +                                                                         // Crossfade video and static image
             "[extended_video][1:v]overlay=format=yuv420[outv];" +                                     // Overlay raw video onto the extended base video
-            "[2:a]atrim=0:" + correctedVideoADurationStr + "[audio1];" +                              // Trim audio file to corrected duration
+            "[2:a]atrim=0:" + correctedVideoADurationStr + ",loudnorm=I=-18:LRA=11:TP=-1[audio1];" +                              // Trim audio file to corrected duration
             "[4:a]atrim=0:" + crossfadeAndRemainingDuration + ",volume=0.15" + "[audio2];" +           // Trim BGM to remaining duration
             "[audio1][audio2]acrossfade=d=" + crossfadeDurationStr + "[extended_audio];" +            // Concat video audio and BGM audio
             voice +                                                                                   // Noise Reduction
