@@ -1,16 +1,18 @@
-Here's a draft README for the Live2D Component project:
+# Live2D Component for Video Pre-rendering
 
-# Live2D Component for Banana Client
+A Live2D integration component that pre-renders Live2D models and animations for use in video production.
 
-A Live2D integration component that renders Live2D models and animations for use in video overlays.
+## Description
+
+This project utilizes the Live2D Cubism SDK to create pre-rendered animations of Live2D models. It's designed for video production workflows, allowing for the integration of Live2D characters into video content through offline rendering.
 
 ## Features
 
-- Renders Live2D models using the Cubism SDK
+- Pre-renders Live2D models using the Cubism SDK
 - Supports model loading, animations, and expressions
-- Integrates with audio for lip sync
+- Integrates with audio for lip sync in pre-rendered output
 - Generates video output with FFmpeg
-- Cross-platform support (Windows)
+- Designed for offline rendering, not real-time applications
 
 ## Installation
 
